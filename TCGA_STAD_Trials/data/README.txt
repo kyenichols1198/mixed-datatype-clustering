@@ -1,3 +1,10 @@
-data_prep_test.r: combines TCGA_STAD data and merges. The code includes J's for the sake of simplicity while I test different gene sets
-ssgsea_test.r: scores RNAseq data by gene set using single sample gsea analysis. Might include in implimentation as an alternative to singscore
-Note: Will split data_prep_test as I test different metrics and create visualizations for clustering
+Here are the scripts for data preparation and analysis:
+
+customics.py: Customers package modified for convenience
+download_PANCAN.r: Downloads PANCANCER data for list of cancer types
+download_TCGA-STAD.r: Downloads TCGA-STAD data
+helper_scripts.py: Contains functions for prep_data, making graphs and running clustering
+prep_data.py: Contains python scripts for preparing data
+run_customics.py: Runs customics and returns latent representation
+run_kmedoids.py: Runs kmedoids clustering
+runMixOmics.r: Creates component representation using MixOmics
