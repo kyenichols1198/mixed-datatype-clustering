@@ -23,7 +23,6 @@ subtypes = c("STAD", "BRCA", "COAD", "CHOL", "LAML")
 ds_names_fname = "datasets.txt"
 
 
-
 # has slightly different format and clinical data is sparse
 download_clinical <- function(stype) {
     clinical_file_path <- paste0(stype, "_clinical.csv")

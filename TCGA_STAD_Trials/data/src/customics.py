@@ -5,7 +5,8 @@
 # Hakim Benkiranes code from Customics paper describing a variational autoencoder
 # Compresses heterogenous multi-omics data to produce latent representation of label
 # This code is the same, without survival or event tasks
-# compressed into one file for educational purposes
+# compressed into one file since alot of their code created dependency errors
+# with our code, which took preference.
 #
 # The code is described in the paper below
 #
@@ -342,6 +343,7 @@ class CustOMICS(nn.Module):
         if png_path: 
             plt.savefig(png_path)
         #plt.show()
+        plt.close()
        
 
     def print_parameters(self):
@@ -438,6 +440,7 @@ def plot_roc_multiclass(y_test, y_pred_proba, filename="", n_classes=2, var_name
         #plt.savefig("roc_multi_{}.png".format(filename))
         plt.savefig(filename)
     #else: #plt.show()
+    plt.close()
 
 def save_plot_score(filename, z, y, title, show=False):
     tsne = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300)

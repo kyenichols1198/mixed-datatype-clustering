@@ -1,3 +1,12 @@
+# Kye D Nichols
+# Script runs MixOmics and produces output
+
+#citation('mixOmics')
+
+#Kim-Anh Le Cao, Florian Rohart, Ignacio Gonzalez, Sebastien Dejean with key contributors Benoit Gautier, Francois
+# Bartolo, contributions from Pierre Monget, Jeff Coquery, FangZou Yao and Benoit Liquet. (2016). mixOmics: Omics
+# Data Integration Project. R package version 6.1.1. https://CRAN.R-project.org/package=mixOmics
+
 #!/usr/bin/env Rscript
 library(mixOmics)
 citation('mixOmics')
@@ -9,7 +18,12 @@ mrna_tag = "_RNAseq.csv"
 methyl_tag = "_methyl.csv"
 protein_tag = "_Protein.csv"
 label_tag = "_labels.csv"
-output_path = "MixOmicsModel.rds"
+tag ="TCGA-STAD-GI.subtype.noprot"
+
+wd <- getwd()
+setwd("..")
+parent <- getwd()
+setwd(path(wd, "data_proc"))
 
 list.keepX = c(20, 20)
 list.keepY = c(20, 20)
@@ -20,17 +34,20 @@ ncomp = 5
 nrepeat1 = 10
 nrepeat2 = 1
 
-file_paths = FALSE
-output_path = FALSE
+
 args = commandArgs(trailingOnly=TRUE)
-if (length(args)==0) {
-  stop("Enter input files", call.=FALSE)
-} else if (length(args)<=5 & length(args)>2) {
-  all_paths = head(args, -1)
-  file_paths = head(args, -1)
-  label_path = tail(args, n=1)
+if (length(args)!=1) {
+  stop("Enter one argument corresponding to file tags", call.=FALSE)
 } else {
-  stop("Wrong Number of arugments: Provide input omics csv, label csv and output fname (3-6 arguments)", call.=FALSE)
+  tag = args[0]
+}
+
+all_files <- list.files(getwd())
+select_files <- c()
+for (file in all_files) {
+    if grepl(tag, file) {
+        select_files <- c(select_files, file)
+    }
 }
 
 data <- list()
@@ -72,12 +89,13 @@ diag(design) = 0
 basic.diablo.model = block.splsda(X = data, Y = Y, ncomp = ncomp, design = design, near.zero.var=TRUE)
 perf.diablo = perf(basic.diablo.model, validation = 'Mfold', folds = folds1, nrepeat = nrepeat1, near.zero.var = TRUE)
 
-performance_path = "mixomics_perf.png"
+performance_path = path(paste0(tag, "_mixomics_perf"), ext = ".png")
 png(performance_path)
 plot(perf.diablo)
 dev.off()
 
-BPPARAM <- BiocParallel::MulticoreParam(workers = parallel::detectCores()-1)
+BPPARAM <- BiocParallel::MulticoreParam(workers = parallel::detectCores()-1, progressBar=TRUE)
+# Windows: BPPARAM <- SnowParallel::MulticoreParam(workers = parallel::detectCores()-1)
 ncomp = perf.diablo$choice.ncomp$WeightedVote["Overall.BER", "centroids.dist"]
 #perf.diablo$choice.ncomp$WeightedVote
 tune.TCGA = tune.block.splsda(X = data,
@@ -90,11 +108,10 @@ tune.TCGA = tune.block.splsda(X = data,
                               nrepeat = nrepeat2,
                               dist = "centroids.dist",
                               BPPARAM=BPPARAM,
-#                              progressBar=TRUE,
                               near.zero.var = TRUE
                             )
 
-tune_model_rds_path = "tune_model.rds"
+tune_model_rds_path = path(paste0(tag, "_tune_model"), ext = ".rds")
 saveRDS(tune.TCGA, tune_model_rds_path)
 
 
@@ -105,31 +122,38 @@ final.diablo.model = block.splsda(X = data,
                                   keepX = list.keepX,
                                   design = design,
                                   near.zero.var = TRUE)
-saveRDS(final.diablo.model, output_path)
+model_rds_path = path(paste0(tag, "MixOmicsModel"), ext = ".rds")
+saveRDS(final.diablo.model, model_rds_path)
 
-png("plotDiablo.png")
+png(path(paste0(tag, "_plotDiablo"), ext = ".png"))
 plotDiablo(final.diablo.model, ncomp = 1)
 dev.off()
 
-png("plotIndiv.png")
+png(path(paste0(tag, "_plotIndiv"), ext = ".png"))
 plotIndiv(final.diablo.model, ind.names = FALSE, legend = TRUE, title = 'DIABLO Sample Plots')
 dev.off()
 
-png("plotArrow.png")
+
+png(path(paste0(tag, "_plotArrow"), ext = ".png"))
 plotArrow(final.diablo.model, ind.names = FALSE, legend = TRUE, title = 'DIABLO')
 dev.off()
 
 
-png("plotVar.png")
+png(path(paste0(tag, "_plotVar"), ext = ".png"))
 plotVar(final.diablo.model, var.names = FALSE,
         style = 'graphics', legend = TRUE,
         pch = c(16, 17, 15), cex = c(2,2,2),
         col = c('darkorchid', 'brown1', 'lightgreen'))
 dev.off()
 
-write.csv(final.diablo.model$X$variates$mRNA, "MixOmicsModel_RNAseq.csv")
-write.csv(final.diablo.model$X$variates$miRNA, "MixOmicsModel_miRNAseq.csv")
-write.csv(final.diablo.model$X$variates$Methyl, "MixOmicsModel_RNAseq.csv")
-write.csv(final.diablo.model$X$variates$Protein, "MixOmicsModel_Protein.csv")
 
+write.csv(final.diablo.model$X$variates$mRNA, path(paste0(tag, "_MixOmicsModel_RNAseq"), ext = ".csv"))
+write.csv(final.diablo.model$X$variates$miRNA, path(paste0(tag, "_MixOmicsModel_miRNAseq"), ext = ".csv"))
+write.csv(final.diablo.model$X$variates$Methyl, path(paste0(tag, "_MixOmicsModel_methyl"), ext = ".csv"))
+#write.csv(final.diablo.model$X$variates$Protein, path(paste0(tag, "_MixOmicsModel_Protein"), ext = ".csv"))
+write.csv(final.diablo.model$Y, path(paste0(tag, "_MixOmicsModel_labels"), ext = ".csv"))
 
+#write.csv(df$variates$mRNA, paste0(tag, "_MixOmicsModel_RNAseq.csv"))
+#write.csv(df$variates$miRNA, paste0(tag, "_MixOmicsModel_miRNAseq.csv"))
+#write.csv(df$variates$Methyl, paste0(tag, "_MixOmicsModel_methyl.csv"))
+#write.csv(data.frame(df$Y), paste0(tag, "_MixOmicsModel_labels.csv"))
